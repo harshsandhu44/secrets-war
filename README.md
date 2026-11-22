@@ -2,6 +2,8 @@
 
 One-time secret sharing. Text is encrypted in the browser (AES-256-GCM), the key lives only in the URL fragment, and the server stores ciphertext in Upstash Redis until it's revealed once (`GETDEL`) or expires.
 
+Live at **https://secrets.harshsandhu.com**.
+
 ## Setup
 
 1. Create a free Upstash Redis database (us-east-1, next to Vercel's default region).
