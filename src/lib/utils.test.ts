@@ -26,4 +26,10 @@ describe("scrambleFrame", () => {
     }
     expect(scrambleFrame(text, 0.5, () => 0).startsWith(text.slice(0, 9))).toBe(true);
   });
+
+  it("never splits an emoji into a lone surrogate", () => {
+    const emoji = "key 🔐 here";
+    const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    for (let p = 0; p <= 1; p += 0.05) expect(lone.test(scrambleFrame(emoji, p))).toBe(false);
+  });
 });

@@ -13,11 +13,13 @@ export function formatRemaining(ms: number): string {
 const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#$%&*+=?@"
 
 // Real text up to progress, random glyphs after. Whitespace stays put so line breaks don't jump.
+// Walks code points, not UTF-16 units, so emoji never split into a lone surrogate.
 export function scrambleFrame(text: string, progress: number, rand = Math.random): string {
-  const settled = Math.floor(text.length * progress)
-  let out = text.slice(0, settled)
-  for (let i = settled; i < text.length; i++) {
-    out += /\s/.test(text[i]) ? text[i] : GLYPHS[Math.floor(rand() * GLYPHS.length)]
+  const chars = Array.from(text)
+  const settled = Math.floor(chars.length * progress)
+  let out = chars.slice(0, settled).join("")
+  for (let i = settled; i < chars.length; i++) {
+    out += /\s/.test(chars[i]) ? chars[i] : GLYPHS[Math.floor(rand() * GLYPHS.length)]
   }
   return out
 }
