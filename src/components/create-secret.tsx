@@ -93,7 +93,7 @@ export function CreateSecret() {
                   aria-invalid={tooBig || undefined}
                   aria-describedby="secret-size"
                   className={cn(
-                    "min-h-40 rounded-xl bg-card pr-11 font-mono text-sm",
+                    "min-h-40 rounded-xl bg-card pr-11 font-mono text-sm pointer-coarse:pr-14",
                     // Blur the glyphs only, not the field: transparent text plus a soft shadow of itself.
                     masked && "text-transparent caret-foreground [text-shadow:0_0_7px_var(--color-foreground)]",
                   )}
