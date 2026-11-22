@@ -1,12 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
+import { useReducedMotion } from "motion/react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
+import { HoldButton } from "@/components/ui/hold-button";
 import { Spinner } from "@/components/ui/spinner";
 import { decrypt, ID_RE, KEY_RE } from "@/lib/secret";
+import { cn, scrambleFrame } from "@/lib/utils";
 
 type State =
   | { kind: "idle" | "loading" }
@@ -14,6 +17,31 @@ type State =
   | { kind: "error"; title: string; body: string; final: boolean };
 
 const fail = (title: string, body: string, final = true): State => ({ kind: "error", title, body, final });
+
+// Glyphs settle into the plaintext left to right, mirroring the in-browser decrypt. Writes the DOM, not state.
+function ScrambleText({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const reduce = useReducedMotion();
+  useLayoutEffect(() => {
+    const el = ref.current;
+    // ponytail: long secrets skip the effect, each frame rebuilds the whole string.
+    if (!el || reduce || text.length > 500) return;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (t: number) => {
+      const p = Math.min((t - t0) / 600, 1);
+      el.textContent = scrambleFrame(text, p);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    el.textContent = scrambleFrame(text, 0);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.textContent = text;
+    };
+  }, [text, reduce]);
+  return <span ref={ref}>{text}</span>;
+}
 
 export function RevealSecret({ id }: { id: string }) {
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -76,10 +104,15 @@ export function RevealSecret({ id }: { id: string }) {
 
   if (state.kind === "revealed") {
     return (
-      <section className="flex flex-col gap-4 animate-in fade-in duration-150 motion-reduce:animate-none">
-        <div className="flex items-start gap-1 rounded-lg border bg-muted/40 py-1 pr-1 pl-3">
-          <pre className="min-w-0 flex-1 py-1.5 font-mono text-sm whitespace-pre-wrap break-all">
-            {hidden ? "•".repeat(Math.min(state.text.length, 24)) : state.text}
+      <section className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-1 duration-200 motion-reduce:animate-none">
+        <div className="flex items-start gap-0.5 rounded-xl border bg-card py-1 pr-1 pl-3">
+          <pre
+            className={cn(
+              "min-w-0 flex-1 py-1.5 font-mono text-sm whitespace-pre-wrap break-all transition-[filter]",
+              hidden && "blur-[6px] select-none",
+            )}
+          >
+            <ScrambleText text={state.text} />
           </pre>
           <Button
             variant="ghost"
@@ -100,7 +133,7 @@ export function RevealSecret({ id }: { id: string }) {
 
   if (state.kind === "error" && state.final) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-1 motion-reduce:animate-none">
         <AlertCircle />
         <AlertTitle>{state.title}</AlertTitle>
         <AlertDescription>{state.body}</AlertDescription>
@@ -111,18 +144,26 @@ export function RevealSecret({ id }: { id: string }) {
   return (
     <section className="flex flex-col gap-4">
       {state.kind === "error" && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-1 motion-reduce:animate-none">
           <AlertCircle />
           <AlertTitle>{state.title}</AlertTitle>
           <AlertDescription>{state.body}</AlertDescription>
         </Alert>
       )}
       <div className="flex flex-col items-start gap-2">
-        <Button size="lg" onClick={reveal} disabled={state.kind === "loading"}>
-          {state.kind === "loading" && <Spinner />}
-          Reveal secret
-        </Button>
-        <p className="text-xs text-muted-foreground">You can only view this once.</p>
+        <HoldButton
+          size="lg"
+          className="px-4"
+          onConfirm={reveal}
+          disabled={state.kind === "loading"}
+          aria-describedby="reveal-hint"
+        >
+          {state.kind === "loading" ? <Spinner /> : <Lock />}
+          {state.kind === "loading" ? "Decrypting…" : "Hold to reveal"}
+        </HoldButton>
+        <p id="reveal-hint" className="text-xs text-muted-foreground">
+          You can only view this once. It&apos;s destroyed as soon as it&apos;s revealed.
+        </p>
       </div>
     </section>
   );
