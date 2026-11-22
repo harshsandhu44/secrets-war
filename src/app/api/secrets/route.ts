@@ -1,5 +1,6 @@
 import { parseCreateBody, randomB64url } from "@/lib/secret";
 import { bump, clientIp, json, limits, log, redis, tooMany } from "@/lib/server";
+import { errorMessage } from "@/lib/utils";
 
 export async function POST(req: Request) {
   const parsed = parseCreateBody(await req.text());
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     bump("created");
     return json({ id }, 201);
   } catch (err) {
-    log("redis_error", { route: "create", message: String(err) });
+    log("redis_error", { route: "create", message: errorMessage(err) });
     return json({ error: "busy" }, 503);
   }
 }

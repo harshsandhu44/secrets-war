@@ -23,3 +23,6 @@ export function scrambleFrame(text: string, progress: number, rand = Math.random
   }
   return out
 }
+
+// Upstash errors end with ", command was: [...]", which carries the secret's key and ciphertext. Keep only the reason.
+export const errorMessage = (err: unknown) => String(err).split(/, command was:/i)[0]

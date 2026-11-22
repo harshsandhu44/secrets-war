@@ -2,6 +2,7 @@ import "server-only";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { after, NextResponse } from "next/server";
+import { errorMessage } from "@/lib/utils";
 
 export const redis = Redis.fromEnv();
 
@@ -30,7 +31,7 @@ export function bump(field: StatField) {
     try {
       await redis.pipeline().hincrby(key, field, 1).expire(key, 30 * 86400).exec();
     } catch (err) {
-      log("stats_error", { message: String(err) });
+      log("stats_error", { message: errorMessage(err) });
     }
   });
 }

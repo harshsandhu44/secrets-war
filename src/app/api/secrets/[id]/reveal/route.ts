@@ -1,5 +1,6 @@
 import { ID_RE, type Payload } from "@/lib/secret";
 import { bump, clientIp, json, limits, log, redis, tooMany } from "@/lib/server";
+import { errorMessage } from "@/lib/utils";
 
 // POST only: link scanners follow GETs, they don't send POSTs from button clicks.
 export async function POST(req: Request, ctx: RouteContext<"/api/secrets/[id]/reveal">) {
@@ -24,7 +25,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/secrets/[id]/re
     bump("revealed");
     return json({ iv: payload.iv, ct: payload.ct, v: payload.v });
   } catch (err) {
-    log("redis_error", { route: "reveal", message: String(err) });
+    log("redis_error", { route: "reveal", message: errorMessage(err) });
     return json({ error: "busy" }, 503);
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRemaining, scrambleFrame } from "./utils";
+import { errorMessage, formatRemaining, scrambleFrame } from "./utils";
 
 const MIN = 60_000;
 
@@ -31,5 +31,13 @@ describe("scrambleFrame", () => {
     const emoji = "key 🔐 here";
     const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
     for (let p = 0; p <= 1; p += 0.05) expect(lone.test(scrambleFrame(emoji, p))).toBe(false);
+  });
+});
+
+describe("errorMessage", () => {
+  it("drops the Redis command, which holds the secret's key and ciphertext", () => {
+    const err = new Error('ERR max request size exceeded, command was: ["set","s:abc","{\\"ct\\":\\"xyz\\"}"]');
+    expect(errorMessage(err)).toBe("Error: ERR max request size exceeded");
+    expect(errorMessage(new Error("fetch failed"))).toBe("Error: fetch failed");
   });
 });
